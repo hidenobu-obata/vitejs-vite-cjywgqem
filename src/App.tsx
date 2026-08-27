@@ -4,7 +4,7 @@ import './App.css';
 // 歌詞の章節データ（すべてひらがな・記号なし）
 const LYRICS_STANZAS = [
   "ごめんきいてないあなたのしてきは",
-  "あたまはもうあしたのよてい",
+  "あたまはもうあすのよてい",
   "ぐちとわかってるならばなおのこと",
   "くちにするなよとしせん",
   "せきたってじはんきでてぃをのみ",
@@ -49,6 +49,15 @@ export default function App() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // 初回読み込み時に音声を準備
+  useEffect(() => {
+    if (!audioRef.current) {
+      const audio = new Audio('https://boncrescent-erifan.jp/special/songsprobon/25.mp3');
+      audio.loop = true; // 必要に応じてループ再生
+      audioRef.current = audio;
+    }
+  }, []);
+
   // タイマー処理
   useEffect(() => {
     if (gameState !== 'playing') return;
@@ -72,40 +81,49 @@ export default function App() {
 
   const startGame = () => {
     setScore(0);
-    setTimeLeft(60);
+    setTimeLeft(150);
     setCurrentIndex(0);
     setInputVal('');
     setFeedback('');
     setIsRankIn(false);
     setNickname('');
     setGameState('playing');
+
+    // ゲームスタートと同時に音楽を再生を試みる
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play().catch(err => {
+        console.log("自動再生がブロックされました:", err);
+      });
+    }
   };
 
-  // 入力が変更されたときの処理（途中のミスでは減点せず、エンター等で確定するか完全一致したときに判定）
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setInputVal(val);
 
     const targetStanza = LYRICS_STANZAS[currentIndex];
 
-    // 入力内容が完全に一致したら自動でクリア＆加点！
     if (val === targetStanza) {
-      setScore(prev => prev + 10); // 1文正解で10点加点
+      setScore(prev => prev + 10);
       setFeedback('⭕ 正解！');
       setInputVal('');
       setCurrentIndex(prev => (prev + 1) % LYRICS_STANZAS.length);
-      setTimeout(() => setFeedback(''), 800); // 0.8秒後にメッセージを消す
+      setTimeout(() => setFeedback(''), 800);
     }
   };
 
+  // ♪ボタンを押したときの音楽再生（ポップアップなし）
   const handlePlayMusic = () => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio('/25.mp3');
+    if (audioRef.current) {
+      if (audioRef.current.paused) {
+        audioRef.current.play().catch(err => {
+          console.log("再生に失敗しました:", err);
+        });
+      } else {
+        audioRef.current.pause();
+      }
     }
-    audioRef.current.play().catch(err => {
-      console.log("音声の再生に失敗しました", err);
-      alert("楽曲「TWO HOURS」 (25.mp3) を再生します");
-    });
   };
 
   const handleSaveRank = (e: React.FormEvent) => {
@@ -123,7 +141,7 @@ export default function App() {
 
   return (
     <div className="hirafuri-container">
-      <button className="music-btn" onClick={handlePlayMusic} title="TWO HOURSを聴く">
+      <button className="music-btn" onClick={handlePlayMusic} title="音楽の再生/一時停止">
         ♪
       </button>
 
