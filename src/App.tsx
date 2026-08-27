@@ -38,7 +38,7 @@ export default function App() {
   const [score, setScore] = useState<number>(0);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [inputVal, setInputVal] = useState<string>('');
-  const [isError, setIsError] = useState<boolean>(false);
+  const [feedback, setFeedback] = useState<string>('');
 
   const [rankings, setRankings] = useState<RankingItem[]>(() => {
     const saved = localStorage.getItem('hirafuri_rankings');
@@ -75,28 +75,26 @@ export default function App() {
     setTimeLeft(150);
     setCurrentIndex(0);
     setInputVal('');
-    setIsError(false);
+    setFeedback('');
     setIsRankIn(false);
     setNickname('');
     setGameState('playing');
   };
 
+  // 入力が変更されたときの処理（途中のミスでは減点せず、エンター等で確定するか完全一致したときに判定）
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setInputVal(val);
 
     const targetStanza = LYRICS_STANZAS[currentIndex];
 
-    if (targetStanza.startsWith(val)) {
-      setIsError(false);
-      if (val === targetStanza) {
-        setScore(prev => prev + 1);
-        setInputVal('');
-        setCurrentIndex(prev => (prev + 1) % LYRICS_STANZAS.length);
-      }
-    } else {
-      setIsError(true);
-      setScore(prev => prev - 1);
+    // 入力内容が完全に一致したら自動でクリア＆加点！
+    if (val === targetStanza) {
+      setScore(prev => prev + 10); // 1文正解で10点加点
+      setFeedback('⭕ 正解！');
+      setInputVal('');
+      setCurrentIndex(prev => (prev + 1) % LYRICS_STANZAS.length);
+      setTimeout(() => setFeedback(''), 800); // 0.8秒後にメッセージを消す
     }
   };
 
@@ -165,10 +163,10 @@ export default function App() {
                 autoFocus
                 autoComplete="off"
                 autoCapitalize="off"
-                className={`text-input ${isError ? 'error-input' : ''}`}
+                className="text-input"
               />
             </div>
-            {isError && <p className="error-msg">⚠️ 間違っています (-1点)</p>}
+            {feedback && <p className="feedback-msg">{feedback}</p>}
           </div>
         </div>
       )}
