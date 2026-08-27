@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 // 歌詞の章節データ
@@ -33,21 +33,13 @@ interface RankingItem {
 }
 
 export default function App() {
-  // ゲームの状態: 'start'（タイトル） | 'playing'（プレイ中） | 'gameover'（結果・ランキング入力）
   const [gameState, setGameState] = useState<'start' | 'playing' | 'gameover'>('start');
-  
-  // タイマー（150秒 = 2分30秒）
   const [timeLeft, setTimeLeft] = useState<number>(150);
-  // スコア
   const [score, setScore] = useState<number>(0);
-  // 現在の歌詞のインデックス
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  // 入力フィールドの値
   const [inputVal, setInputVal] = useState<string>('');
-  // 間違い判定（赤文字用）
   const [isError, setIsError] = useState<boolean>(false);
 
-  // ランキングデータ（LocalStorage保存）
   const [rankings, setRankings] = useState<RankingItem[]>(() => {
     const saved = localStorage.getItem('hirafuri_rankings');
     return saved ? JSON.parse(saved) : [];
@@ -55,16 +47,19 @@ export default function App() {
   const [nickname, setNickname] = useState<string>('');
   const [isRankIn, setIsRankIn] = useState<boolean>(false);
 
-  // 音楽再生用の参照
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // 1. タイマー処理
+  // タイマー処理
   useEffect(() => {
     if (gameState !== 'playing') return;
 
     if (timeLeft <= 0) {
       setGameState('gameover');
-      checkRanking(score);
+      if (rankings.length < 5 || score > rankings[rankings.length - 1].score) {
+        setIsRankIn(true);
+      } else {
+        setIsRankIn(false);
+      }
       return;
     }
 
@@ -73,19 +68,8 @@ export default function App() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [gameState, timeLeft]);
+  }, [gameState, timeLeft, score, rankings]);
 
-  // ランキングチェック
-  const checkRanking = (finalScore: number) => {
-    // 上位5名に入るか、まだ5名未満か
-    if (rankings.length < 5 || finalScore > rankings[rankings.length - 1].score) {
-      setIsRankIn(true);
-    } else {
-      setIsRankIn(false);
-    }
-  };
-
-  // ゲームスタート
   const startGame = () => {
     setScore(0);
     setTimeLeft(150);
@@ -97,49 +81,42 @@ export default function App() {
     setGameState('playing');
   };
 
-  // 入力チェック（フリック・ソフトウェアキーボード対応）
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setInputVal(val);
 
     const targetStanza = LYRICS_STANZAS[currentIndex];
 
-    // 入力途中が正しいかチェック
     if (targetStanza.startsWith(val)) {
       setIsError(false);
-      // 完全一致したら次へ進む
       if (val === targetStanza) {
         setScore(prev => prev + 1);
         setInputVal('');
-        // 次の章節へ（ループさせる）
         setCurrentIndex(prev => (prev + 1) % LYRICS_STANZAS.length);
       }
     } else {
-      // 間違っている場合
       setIsError(true);
       setScore(prev => prev - 1);
     }
   };
 
-  // 音楽再生ボタン（♪マーク）
   const handlePlayMusic = () => {
     if (!audioRef.current) {
-      audioRef.current = new Audio('https://boncrescent-erifan.jp/special/songsprobon/25.mp3');
+      audioRef.current = new Audio('/25.mp3');
     }
     audioRef.current.play().catch(err => {
-      console.log("音声の再生に失敗しました（ファイルが存在するか確認してください）", err);
+      console.log("音声の再生に失敗しました", err);
       alert("楽曲「TWO HOURS」 (25.mp3) を再生します");
     });
   };
 
-  // ランキング登録
   const handleSaveRank = (e: React.FormEvent) => {
     e.preventDefault();
     if (!nickname.trim()) return;
 
     const newRankings = [...rankings, { name: nickname.slice(0, 10), score }]
       .sort((a, b) => b.score - a.score)
-      .slice(0, 5); // 上位5名まで
+      .slice(0, 5);
 
     setRankings(newRankings);
     localStorage.setItem('hirafuri_rankings', JSON.stringify(newRankings));
@@ -148,13 +125,10 @@ export default function App() {
 
   return (
     <div className="hirafuri-container">
-      
-      {/* 画面右上：点滅する♪マーク */}
       <button className="music-btn" onClick={handlePlayMusic} title="TWO HOURSを聴く">
         ♪
       </button>
 
-      {/* --- 1. スタート画面 --- */}
       {gameState === 'start' && (
         <div className="screen start-screen">
           <h1 className="game-title">ひらふり</h1>
@@ -165,11 +139,8 @@ export default function App() {
         </div>
       )}
 
-      {/* --- 2. プレイ画面 --- */}
       {gameState === 'playing' && (
         <div className="screen playing-screen">
-          
-          {/* 上部ヘッダー（左端：タイム / 上部中央：スコア） */}
           <div className="game-header">
             <div className="time-box">
               タイム: <span className="highlight">{timeLeft}</span>
@@ -179,14 +150,12 @@ export default function App() {
             </div>
           </div>
 
-          {/* 質問文（1章節ごと表示） */}
           <div className="quiz-area">
             <p className="instruction-label">以下の歌詞を入力してね！</p>
             <div className="target-stanza">
               {LYRICS_STANZAS[currentIndex]}
             </div>
 
-            {/* すぐ下のインプットフィールド */}
             <div className="input-area">
               <input 
                 type="text"
@@ -204,13 +173,11 @@ export default function App() {
         </div>
       )}
 
-      {/* --- 3. ゲームオーバー・ランキング画面 --- */}
       {gameState === 'gameover' && (
         <div className="screen gameover-screen">
           <h2 className="gameover-title">タイムアップ！</h2>
           <p className="final-score">最終スコア: <strong>{score} 点</strong></p>
 
-          {/* 上位5名入力フォーム */}
           {isRankIn ? (
             <form onSubmit={handleSaveRank} className="rank-form">
               <p className="rank-in-notice">🎉 トップ5ランクイン！</p>
@@ -229,7 +196,6 @@ export default function App() {
             <button className="retry-btn" onClick={startGame}>もう一度プレイ</button>
           )}
 
-          {/* ランキング表示 */}
           <div className="ranking-section">
             <h3>🏆 TOP 5 ランキング</h3>
             {rankings.length === 0 ? (
@@ -253,7 +219,6 @@ export default function App() {
           )}
         </div>
       )}
-
     </div>
   );
 }
