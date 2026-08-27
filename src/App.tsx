@@ -34,7 +34,7 @@ interface RankingItem {
 
 export default function App() {
   const [gameState, setGameState] = useState<'start' | 'playing' | 'gameover'>('start');
-  const [timeLeft, setTimeLeft] = useState<number>(150);
+  const [timeLeft, setTimeLeft] = useState<number>(60);
   const [score, setScore] = useState<number>(0);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [inputVal, setInputVal] = useState<string>('');
@@ -81,7 +81,7 @@ export default function App() {
 
   const startGame = () => {
     setScore(0);
-    setTimeLeft(150);
+    setTimeLeft(60);
     setCurrentIndex(0);
     setInputVal('');
     setFeedback('');
