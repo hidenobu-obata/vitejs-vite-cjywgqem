@@ -53,7 +53,7 @@ export default function App() {
   useEffect(() => {
     if (!audioRef.current) {
       const audio = new Audio('https://boncrescent-erifan.jp/special/songsprobon/25.mp3');
-      audio.loop = true; // 必要に応じてループ再生
+      audio.loop = true;
       audioRef.current = audio;
     }
   }, []);
@@ -89,7 +89,6 @@ export default function App() {
     setNickname('');
     setGameState('playing');
 
-    // ゲームスタートと同時に音楽を再生を試みる
     if (audioRef.current) {
       audioRef.current.currentTime = 0;
       audioRef.current.play().catch(err => {
@@ -113,7 +112,6 @@ export default function App() {
     }
   };
 
-  // ♪ボタンを押したときの音楽再生（ポップアップなし）
   const handlePlayMusic = () => {
     if (audioRef.current) {
       if (audioRef.current.paused) {
@@ -181,7 +179,13 @@ export default function App() {
                 autoFocus
                 autoComplete="off"
                 autoCapitalize="off"
+                spellCheck={false}
                 className="text-input"
+                style={{
+                  color: '#333333',         // iPhoneで文字が消える現象を防ぐための明示的な文字色
+                  backgroundColor: '#ffffff', // 背景色を確実に白に固定
+                  WebkitAppearance: 'none',  // iOSのデフォルトの立体的な枠を消す
+                }}
               />
             </div>
             {feedback && <p className="feedback-msg">{feedback}</p>}
@@ -204,6 +208,11 @@ export default function App() {
                 value={nickname}
                 onChange={e => setNickname(e.target.value)}
                 className="nickname-input"
+                style={{
+                  color: '#333333',
+                  backgroundColor: '#ffffff',
+                  WebkitAppearance: 'none',
+                }}
                 required
               />
               <button type="submit" className="save-btn">スコアを登録</button>
